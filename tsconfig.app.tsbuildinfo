@@ -1,0 +1,1 @@
+{"root":["./src/env.d.ts","./src/main.ts","./src/vite-env.d.ts","./src/composables/usemonacotheme.ts","./src/composables/usethememode.ts","./src/router/index.ts","./src/app.vue","./src/components/colorinput.vue","./src/components/holisticseditor.vue","./src/views/homeview.vue","./src/views/monacocustomizerview.vue"],"version":"5.9.3"}
