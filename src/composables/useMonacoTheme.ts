@@ -1,9 +1,12 @@
 import { ref, computed, onBeforeUnmount } from 'vue'
 import * as monaco from 'monaco-editor'
 import type { editor as EditorNS } from 'monaco-editor'
+import { themePresets, type ThemePreset } from '@/data/theme-presets'
 
 const THEME_NAME = 'holistics-custom'
 const STORAGE_KEY = 'holistics-monaco-theme'
+
+const activePresetId = ref(themePresets[0].id)
 
 export interface ColorVarDef {
   key: string
@@ -68,6 +71,15 @@ function loadFromStorage() {
     const raw = localStorage.getItem(STORAGE_KEY)
     if (!raw) return
     const saved = JSON.parse(raw)
+    // Restore preset first, then overlay user customizations
+    if (saved.presetId && themePresets.some((p) => p.id === saved.presetId)) {
+      activePresetId.value = saved.presetId
+      const preset = themePresets.find((p) => p.id === saved.presetId)!
+      for (const def of colorVarDefs) {
+        const r = colorRefs[def.key]
+        if (r) r.value = preset.colors[def.key] ?? def.defaultValue
+      }
+    }
     if (saved.colors) {
       for (const def of colorVarDefs) {
         if (saved.colors[def.key]) {
@@ -95,6 +107,7 @@ function saveToStorage() {
     }
   }
   const data = {
+    presetId: activePresetId.value,
     colors,
     options: {
       fontSize: fontSize.value,
@@ -114,12 +127,16 @@ function getColor(key: string): string {
   return colorRefs[key]?.value ?? ''
 }
 
+function getActivePreset(): ThemePreset {
+  return themePresets.find((p) => p.id === activePresetId.value) ?? themePresets[0]
+}
+
 function buildTheme(): EditorNS.IStandaloneThemeData {
   const colors: Record<string, string> = {}
   for (const def of colorVarDefs) {
     colors[def.monacoKey] = getColor(def.key) || def.defaultValue
   }
-  return { base: 'vs-dark', inherit: true, rules: [], colors }
+  return { base: getActivePreset().base, inherit: true, rules: [], colors }
 }
 
 // Define initial theme
@@ -148,11 +165,19 @@ export function useMonacoTheme() {
     scheduleThemeUpdate()
   }
 
-  function resetDefaults() {
+  function applyPreset(presetId: string) {
+    const preset = themePresets.find((p) => p.id === presetId)
+    if (!preset) return
+    activePresetId.value = preset.id
     for (const def of colorVarDefs) {
       const r = colorRefs[def.key]
-      if (r) r.value = def.defaultValue
+      if (r) r.value = preset.colors[def.key] ?? def.defaultValue
     }
+    scheduleThemeUpdate()
+  }
+
+  function resetDefaults() {
+    applyPreset(activePresetId.value)
     fontSize.value = 14
     fontFamily.value = "'Fira Code', 'Cascadia Code', 'Consolas', monospace"
     lineHeight.value = 20
@@ -182,6 +207,8 @@ export function useMonacoTheme() {
     colorRefs,
     getColor,
     updateColor,
+    activePresetId,
+    applyPreset,
     fontSize,
     fontFamily,
     lineHeight,

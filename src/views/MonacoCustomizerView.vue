@@ -7,10 +7,13 @@ import {
   groupNames,
   groupedDefs,
 } from '@/composables/useMonacoTheme'
+import { themePresets } from '@/data/theme-presets'
 
 const {
   colorRefs,
   updateColor,
+  activePresetId,
+  applyPreset,
   fontSize,
   fontFamily,
   lineHeight,
@@ -20,6 +23,11 @@ const {
   changedCount,
   exportTheme,
 } = useMonacoTheme()
+
+function onPresetChange(event: Event) {
+  const id = (event.target as HTMLSelectElement).value
+  applyPreset(id)
+}
 
 const sampleCode = ref(`import { createApp } from 'vue'
 import App from './App.vue'
@@ -105,6 +113,43 @@ function handleExport() {
             {{ exportLabel }}
           </button>
         </div>
+      </div>
+
+      <!-- Theme preset selector -->
+      <div
+        class="px-4 py-3 shrink-0"
+        style="border-bottom: 1px solid var(--color-border-subtle)"
+      >
+        <label class="flex flex-col gap-1.5">
+          <span class="text-[11px] font-semibold uppercase tracking-wider" style="color: var(--color-text-tertiary)">
+            Preset
+          </span>
+          <select
+            :value="activePresetId"
+            class="text-xs rounded-md px-2.5 py-1.5 focus:outline-none w-full"
+            style="background: var(--color-surface-3); border: 1px solid var(--color-border); color: var(--color-text-primary)"
+            @change="onPresetChange"
+          >
+            <optgroup label="Dark">
+              <option
+                v-for="preset in themePresets.filter(p => p.base === 'vs-dark')"
+                :key="preset.id"
+                :value="preset.id"
+              >
+                {{ preset.name }}
+              </option>
+            </optgroup>
+            <optgroup label="Light">
+              <option
+                v-for="preset in themePresets.filter(p => p.base === 'vs')"
+                :key="preset.id"
+                :value="preset.id"
+              >
+                {{ preset.name }}
+              </option>
+            </optgroup>
+          </select>
+        </label>
       </div>
 
       <!-- Scrollable controls -->
